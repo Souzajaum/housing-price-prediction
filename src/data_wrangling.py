@@ -7,7 +7,7 @@ import json
 import logging
 from pathlib import Path
 
-# Configurar logging
+#  logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -40,25 +40,25 @@ def processar_arquivo_urbanized(caminho_entrada, caminho_saida):
     logger.info("Carregando arquivo de entrada: %s", caminho_entrada)
     df = pd.read_csv(caminho_entrada)
     
-    # Remover coluna system:index se existir
+    # remoção da coluna system:index se existir
     if 'system:index' in df.columns:
         logger.info("Removendo coluna system:index")
         df = df.drop(columns=['system:index'])
     
-    # Extrair coordenadas da coluna .geo
+    # extrair coordenadas da coluna .geo
     if '.geo' in df.columns:
         logger.info("Extraindo coordenadas da coluna .geo")
-        # Aplicar a função de processamento em cada linha
+        # aplicar a função de processamento em cada linha
         coords = df['.geo'].apply(processar_coordenadas)
         
-        # Separar longitude e latitude em colunas diferentes
+        # separar longitude e latitude em colunas diferentes
         df['longitude'] = coords.apply(lambda x: x[0] if x else None)
         df['latitude'] = coords.apply(lambda x: x[1] if x else None)
         
-        # Remover a coluna .geo
+        # remoção da coluna .geo
         df = df.drop(columns=['.geo'])
         
-        # Verificar se há valores nulos
+        # verificação de valores nulos
         nulos = df['longitude'].isna().sum()
         if nulos > 0:
             logger.warning("Encontrados %d registros com coordenadas inválidas", nulos)
@@ -66,16 +66,14 @@ def processar_arquivo_urbanized(caminho_entrada, caminho_saida):
         logger.error("Coluna .geo não encontrada no arquivo")
         return
     
-    # Salvar arquivo processado
+    # salvar arquivo processado
     logger.info("Salvando arquivo processado em: %s", caminho_saida)
     df.to_csv(caminho_saida, index=False)
     logger.info("Processamento concluído. Total de registros: %d", len(df))
 
 if __name__ == "__main__":
-    # Definir caminhos
     projeto_dir = Path(__file__).resolve().parents[1]
     caminho_entrada = projeto_dir / "data" / "intermediate" / "houses_with_urbanized_status.csv"
     caminho_saida = projeto_dir / "data" / "processed" / "housing_final.csv"
     
-    # Processar arquivo
     processar_arquivo_urbanized(caminho_entrada, caminho_saida) 

@@ -7,7 +7,7 @@ import numpy as np
 import logging
 from pathlib import Path
 
-# Configurar logging
+# logging config
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def limpar_dados(df):
     logger.info("Limpando dados")
     df_limpo = df.copy()
     
-    # Remover valores negativos em colunas que não podem ser negativas
+    # tratamento de valores negativos em colunas que não podem ser negativas
     colunas_positivas = ['total_rooms', 'total_bedrooms', 'population', 'households', 'median_income']
     for coluna in colunas_positivas:
         if coluna in df_limpo.columns:
@@ -60,20 +60,20 @@ def tratar_valores_nulos(df):
     logger.info("Tratando valores nulos")
     df_sem_nulos = df.copy()
     
-    # Verificar colunas com valores nulos
+    # tratamento de colunas com valores nulos
     colunas_com_nulos = df_sem_nulos.columns[df_sem_nulos.isnull().any()].tolist()
     
     if colunas_com_nulos:
         logger.info("Colunas com valores nulos: %s", colunas_com_nulos)
         
-        # Preencher valores nulos nas colunas numéricas com a mediana
+        # preenchimento de valores nulos nas colunas numéricas com a mediana
         colunas_numericas = df_sem_nulos.select_dtypes(include=['number']).columns
         for coluna in colunas_com_nulos:
             if coluna in colunas_numericas:
                 logger.info("Preenchendo valores nulos em %s com a mediana", coluna)
                 df_sem_nulos[coluna] = df_sem_nulos[coluna].fillna(df_sem_nulos[coluna].median())
             else:
-                # Para colunas categóricas, preencher com o valor mais frequente
+                # preenchimento de valores nulos nas colunas categóricas com o valor mais frequente
                 logger.info("Preenchendo valores nulos em %s com o valor mais frequente", coluna)
                 df_sem_nulos[coluna] = df_sem_nulos[coluna].fillna(df_sem_nulos[coluna].mode()[0])
     else:
@@ -94,21 +94,21 @@ def processar_categorias(df):
     logger.info("Processando variáveis categóricas")
     df_processado = df.copy()
     
-    # Verificar se existe a coluna ocean_proximity
+    # verificação de existência da coluna ocean_proximity
     if 'ocean_proximity' in df_processado.columns:
         logger.info("Aplicando one-hot encoding em ocean_proximity")
-        # Criar variáveis dummy (one-hot encoding)
+        # criar variáveis dummy (one-hot encoding)
         df_dummies = pd.get_dummies(df_processado['ocean_proximity'], prefix='ocean_proximity')
         
-        # Garantir que os valores sejam inteiros (0 ou 1)
+        # garantia de que os valores sejam inteiros (0 ou 1)
         for coluna in df_dummies.columns:
             df_dummies[coluna] = df_dummies[coluna].astype(int)
             logger.info("Convertendo %s para valores 0/1", coluna)
         
-        # Concatenar as dummies com o DataFrame original
+        # concatenação das dummies com o DataFrame original
         df_processado = pd.concat([df_processado, df_dummies], axis=1)
         
-        # Remover a coluna original
+        # remoção da coluna original
         df_processado = df_processado.drop(columns=['ocean_proximity'])
         
         logger.info("Criadas %d colunas dummies para ocean_proximity com valores 0/1", len(df_dummies.columns))
@@ -128,22 +128,22 @@ def adicionar_features(df):
     logger.info("Adicionando features derivadas")
     df_features = df.copy()
     
-    # Calcular features derivadas
+    # features derivadas
     if all(coluna in df_features.columns for coluna in ['total_rooms', 'households']):
         df_features['rooms_per_household'] = df_features['total_rooms'] / df_features['households']
-        # Corrigir valores infinitos
+        # tratamento de valores infinitos
         df_features['rooms_per_household'] = df_features['rooms_per_household'].replace([np.inf, -np.inf], np.nan)
         df_features['rooms_per_household'] = df_features['rooms_per_household'].fillna(df_features['rooms_per_household'].median())
     
     if all(coluna in df_features.columns for coluna in ['total_bedrooms', 'households']):
         df_features['bedrooms_per_household'] = df_features['total_bedrooms'] / df_features['households']
-        # Corrigir valores infinitos
+        # tratamento de valores infinitos
         df_features['bedrooms_per_household'] = df_features['bedrooms_per_household'].replace([np.inf, -np.inf], np.nan)
         df_features['bedrooms_per_household'] = df_features['bedrooms_per_household'].fillna(df_features['bedrooms_per_household'].median())
     
     if all(coluna in df_features.columns for coluna in ['total_bedrooms', 'total_rooms']):
         df_features['bedrooms_per_room'] = df_features['total_bedrooms'] / df_features['total_rooms']
-        # Corrigir valores infinitos
+        # tratamento de valores infinitos
         df_features['bedrooms_per_room'] = df_features['bedrooms_per_room'].replace([np.inf, -np.inf], np.nan)
         df_features['bedrooms_per_room'] = df_features['bedrooms_per_room'].fillna(df_features['bedrooms_per_room'].median())
     
@@ -170,16 +170,15 @@ def preprocessar_dados(caminho_entrada, caminho_saida=None):
     Returns:
         DataFrame processado
     """
-    # Carregar dados
     df = carregar_dados(caminho_entrada)
     
-    # Aplicar etapas de processamento
+    #  etapas de processamento
     df = limpar_dados(df)
     df = tratar_valores_nulos(df)
     df = processar_categorias(df)
     df = adicionar_features(df)
     
-    # Salvar dados processados, se especificado
+   
     if caminho_saida:
         logger.info("Salvando dados processados em %s", caminho_saida)
         df.to_csv(caminho_saida, index=False)
@@ -187,7 +186,7 @@ def preprocessar_dados(caminho_entrada, caminho_saida=None):
     return df
 
 if __name__ == "__main__":
-    # Exemplo de uso
+    
     projeto_dir = Path(__file__).resolve().parents[1]
     caminho_entrada = projeto_dir / "data" / "raw" / "housing.csv"
     caminho_saida = projeto_dir / "data" / "processed" / "housing_processed.csv"
